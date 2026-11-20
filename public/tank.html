@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ตู้ปลาของเรา</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink: #12384a; --sun: #ffcf3f; --coral: #ff7a59; --sea-deep: #0b4f7a; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0b4f7a; }
+    body { font-family: 'Mali', system-ui, sans-serif; color: var(--ink); }
+    canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+    .title {
+      position: fixed; top: 2.2vh; left: 2.2vw; margin: 0;
+      font-size: clamp(22px, 3.4vw, 64px); font-weight: 700; color: #fff; letter-spacing: .02em;
+      text-shadow: 0 .08em 0 var(--sea-deep), 0 .2em .5em rgba(5,40,64,.35);
+      transform: rotate(-2deg); transform-origin: left center; pointer-events: none;
+    }
+    .title span { color: var(--sun); }
+    .qr-card {
+      position: fixed; right: 2.2vw; bottom: 3vh;
+      width: clamp(170px, 21vw, 440px);
+      background: #fffdf6; border-radius: clamp(16px, 1.6vw, 32px);
+      padding: clamp(10px, 1.1vw, 22px);
+      box-shadow: 0 .6vw 0 rgba(5,40,64,.35), 0 1.2vw 3vw rgba(5,40,64,.35);
+      transform: rotate(1.5deg);
+      display: flex; flex-direction: column; align-items: center; gap: clamp(6px, .7vw, 14px);
+    }
+    .qr-card::before {
+      content: ''; position: absolute; top: -14px; left: 50%; width: 38%; height: 26px; margin-left: -19%;
+      background: rgba(255, 207, 63, .85); border-radius: 4px; transform: rotate(-3deg);
+    }
+    .qr-card img { width: 100%; aspect-ratio: 1; display: block; image-rendering: pixelated; }
+    .qr-card p {
+      margin: 0; text-align: center; font-weight: 700; line-height: 1.3;
+      font-size: clamp(16px, 1.75vw, 40px);
+    }
+    .qr-card p em { font-style: normal; color: var(--coral); }
+    .sound {
+      position: fixed; top: 2.2vh; right: 2.2vw;
+      width: clamp(44px, 3.6vw, 72px); height: clamp(44px, 3.6vw, 72px);
+      border-radius: 50%; border: 3px solid rgba(255,255,255,.75);
+      background: rgba(5,40,64,.35); color: #fff; cursor: pointer; padding: 0;
+      display: grid; place-items: center; backdrop-filter: blur(4px);
+    }
+    .sound svg { width: 55%; height: 55%; }
+    .sound .on, .sound[aria-pressed="true"] .off { display: none; }
+    .sound[aria-pressed="true"] .on { display: block; }
+    .empty {
+      position: fixed; left: 0; right: 0; top: 38%; margin: 0; text-align: center; pointer-events: none;
+      font-size: clamp(22px, 3vw, 60px); font-weight: 700; color: rgba(255,255,255,.92);
+      text-shadow: 0 .1em .4em rgba(5,40,64,.5);
+      transition: opacity 1.2s ease;
+    }
+    .empty[hidden] { display: block; opacity: 0; }
+    .offline {
+      position: fixed; left: 50%; bottom: 2vh; transform: translateX(-50%);
+      background: rgba(5,40,64,.6); color: #fff; padding: .4em 1em; border-radius: 999px;
+      font-size: clamp(13px, 1vw, 20px);
+    }
+    .offline[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <canvas id="tank"></canvas>
+  <h1 class="title">ตู้ปลา<span>ของเรา</span></h1>
+  <p class="empty" id="empty">ยังไม่มีปลาเลย มาวาดปลาตัวแรกกันเถอะ!</p>
+  <aside class="qr-card">
+    <img src="/qr.svg" alt="QR สำหรับส่งปลา">
+    <p>สแกนเพื่อส่ง<em>ปลาของหนู</em>เข้าตู้!</p>
+  </aside>
+  <button class="sound" id="sound" type="button" aria-pressed="false" aria-label="เปิดเสียง">
+    <svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    <svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+  </button>
+  <p class="offline" id="offline" hidden>กำลังเชื่อมต่อใหม่...</p>
+  <script type="module" src="/tank.js"></script>
+</body>
+</html>

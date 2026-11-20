@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: drawing-aquarium
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /qr.svg
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: PUBLIC_URL
+        sync: false
+      - key: ADMIN_KEY
+        generateValue: true
+      - key: DATA_DIR
+        value: ./data

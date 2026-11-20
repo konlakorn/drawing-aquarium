@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1b8db3">
+  <title>ส่งปลาลงตู้</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --sea-deep: #0b4f7a;
+      --sea: #1b8db3;
+      --sea-light: #7fdbea;
+      --foam: #effbfd;
+      --sun: #ffcf3f;
+      --sun-dark: #e0a400;
+      --coral: #ff7a59;
+      --coral-dark: #d9532f;
+      --ink: #12384a;
+      --paper: #fffdf6;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: 'Mali', system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 8%, rgba(255,255,255,.55) 0 40px, transparent 41px),
+        radial-gradient(circle at 88% 22%, rgba(255,255,255,.35) 0 18px, transparent 19px),
+        radial-gradient(circle at 75% 92%, rgba(255,255,255,.25) 0 26px, transparent 27px),
+        linear-gradient(180deg, var(--sea-light) 0%, #3fb6d3 55%, var(--sea) 100%);
+      background-attachment: fixed;
+      -webkit-tap-highlight-color: transparent;
+    }
+    main {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: max(20px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    h1 {
+      margin: 6px 0 0;
+      font-size: clamp(30px, 9vw, 40px);
+      line-height: 1.15;
+      text-align: center;
+      color: #fff;
+      text-shadow: 0 3px 0 var(--sea-deep), 0 6px 14px rgba(11,79,122,.35);
+      letter-spacing: .5px;
+    }
+    h1 span { display: inline-block; transform: rotate(-3deg); color: var(--sun); }
+    .card {
+      background: var(--paper);
+      border-radius: 28px;
+      padding: 22px 18px;
+      box-shadow: 0 6px 0 rgba(11,79,122,.25), 0 14px 30px rgba(11,79,122,.18);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .card[hidden] { display: none; }
+    .tip {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.5;
+      text-align: center;
+    }
+    .steps-art { display: flex; justify-content: center; gap: 10px; font-size: 15px; text-align: center; }
+    .steps-art div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .steps-art svg { width: 64px; height: 64px; }
+    .btn {
+      appearance: none;
+      border: 0;
+      border-radius: 22px;
+      font: inherit;
+      font-weight: 700;
+      font-size: 22px;
+      padding: 18px 20px;
+      min-height: 68px;
+      width: 100%;
+      color: var(--ink);
+      background: var(--sun);
+      box-shadow: 0 6px 0 var(--sun-dark);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: transform .08s ease, box-shadow .08s ease, opacity .2s;
+      text-decoration: none;
+    }
+    .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--sun-dark); }
+    .btn.coral { background: var(--coral); color: #fff; box-shadow: 0 6px 0 var(--coral-dark); }
+    .btn.coral:active { box-shadow: 0 2px 0 var(--coral-dark); }
+    .btn.quiet {
+      background: transparent; box-shadow: none; color: var(--sea); font-size: 18px; min-height: 48px; padding: 8px;
+      text-decoration: underline; text-underline-offset: 4px;
+    }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .btn svg { width: 34px; height: 34px; flex: none; }
+    .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+    .pond {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      aspect-ratio: 4 / 3;
+      background:
+        radial-gradient(ellipse at 50% -20%, rgba(255,255,255,.55), transparent 60%),
+        linear-gradient(180deg, #8ee3f0 0%, #3db0cf 60%, #2a8fb5 100%);
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 0 0 4px rgba(255,255,255,.6);
+    }
+    .pond::after {
+      content: '';
+      position: absolute; left: 0; right: 0; bottom: 0; height: 16%;
+      background: radial-gradient(ellipse at 30% 0, #f6dca6 60%, transparent 61%) 0 0 / 50% 100%, #f2cf8c;
+      background-repeat: repeat-x;
+    }
+    .pond img {
+      position: relative;
+      z-index: 1;
+      max-width: 78%;
+      max-height: 72%;
+      filter: drop-shadow(0 6px 6px rgba(11,79,122,.35));
+      animation: bob 2.4s ease-in-out infinite;
+    }
+    .pond .bubble {
+      position: absolute; bottom: -20px; width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.8);
+      animation: rise 4s linear infinite;
+    }
+    .pond .bubble:nth-child(2) { left: 18%; animation-delay: -1s; width: 10px; height: 10px; }
+    .pond .bubble:nth-child(3) { left: 80%; animation-delay: -2.5s; }
+    .pond .bubble:nth-child(4) { left: 62%; animation-delay: -3.2s; width: 8px; height: 8px; }
+    @keyframes bob { 50% { transform: translateY(-6px) rotate(-2deg); } }
+    @keyframes rise { to { transform: translateY(-340px) translateX(10px); opacity: 0; } }
+
+    .question { margin: 0; font-size: 22px; font-weight: 700; text-align: center; }
+    .facing { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .facing .btn { background: #e8f7fb; box-shadow: 0 6px 0 #b6dfea; flex-direction: column; gap: 2px; padding: 12px; font-size: 20px; }
+    .facing .btn svg { width: 54px; height: 40px; }
+    .facing .btn[aria-pressed="true"] { background: var(--sea); color: #fff; box-shadow: 0 6px 0 var(--sea-deep); }
+    label.name { display: flex; flex-direction: column; gap: 8px; font-size: 18px; font-weight: 600; }
+    label.name small { font-weight: 400; opacity: .7; }
+    input[type="text"] {
+      font: inherit; font-size: 22px; padding: 14px 16px; border-radius: 18px;
+      border: 3px solid #b6dfea; background: #fff; color: var(--ink); width: 100%;
+    }
+    input[type="text"]:focus { outline: none; border-color: var(--sea); }
+    .error {
+      margin: 0; padding: 14px 16px; border-radius: 18px; background: #fff0eb; color: #a83a1c;
+      font-size: 18px; font-weight: 600; text-align: center; border: 2px dashed var(--coral);
+    }
+    .error:empty { display: none; }
+    .center { text-align: center; }
+    .working { align-items: center; padding: 34px 18px; }
+    .working p { margin: 0; font-size: 22px; font-weight: 600; }
+    .spinner { position: relative; width: 90px; height: 90px; }
+    .spinner span {
+      position: absolute; bottom: 0; left: 50%; border-radius: 50%; border: 3px solid var(--sea);
+      animation: spin-bubble 1.4s ease-in infinite;
+    }
+    .spinner span:nth-child(1) { width: 26px; height: 26px; margin-left: -13px; }
+    .spinner span:nth-child(2) { width: 16px; height: 16px; margin-left: -20px; animation-delay: .45s; }
+    .spinner span:nth-child(3) { width: 20px; height: 20px; margin-left: 2px; animation-delay: .9s; }
+    @keyframes spin-bubble { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-70px); opacity: 0; } }
+    .done { align-items: center; text-align: center; }
+    .done h2 { margin: 0; font-size: 28px; line-height: 1.35; }
+    .done svg { width: 140px; height: 100px; animation: bob 2s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>วาดปลา <span>ส่งลงตู้!</span></h1>
+
+    <section class="card" data-step="pick">
+      <div class="steps-art" aria-hidden="true">
+        <div>
+          <svg viewBox="0 0 64 64"><rect x="10" y="8" width="44" height="50" rx="4" fill="#fff" stroke="#12384a" stroke-width="3"/><path d="M20 34c6-8 16-8 22 0-6 8-16 8-22 0z" fill="#ff7a59" stroke="#12384a" stroke-width="2.5"/><path d="M20 34l-6-5v10z" fill="#ffcf3f" stroke="#12384a" stroke-width="2.5" stroke-linejoin="round"/></svg>
+          วาดบนกระดาษขาว
+        </div>
+        <div>
+          <svg viewBox="0 0 64 64"><path d="M14 46l26-26 6 6-26 26H14z" fill="#ffcf3f" stroke="#12384a" stroke-width="3" stroke-linejoin="round"/><path d="M40 20l4-4 6 6-4 4" fill="#ff7a59" stroke="#12384a" stroke-width="3" stroke-linejoin="round"/></svg>
+          ระบายสีเข้ม ๆ
+        </div>
+        <div>
+          <svg viewBox="0 0 64 64"><rect x="8" y="18" width="48" height="34" rx="8" fill="#7fdbea" stroke="#12384a" stroke-width="3"/><circle cx="32" cy="35" r="10" fill="#fff" stroke="#12384a" stroke-width="3"/><rect x="22" y="12" width="20" height="8" rx="3" fill="#12384a"/></svg>
+          ถ่ายในที่สว่าง
+        </div>
+      </div>
+      <p class="tip">วาดบนกระดาษขาว ระบายสีเข้ม ๆ แล้วถ่ายให้เห็นปลาทั้งตัวในที่สว่าง ๆ นะ</p>
+      <label class="btn coral" for="photo">
+        <svg viewBox="0 0 36 36" aria-hidden="true"><rect x="3" y="9" width="30" height="21" rx="5" fill="#fff"/><circle cx="18" cy="19.5" r="6" fill="#ff7a59" stroke="#fff" stroke-width="2.5"/><rect x="12" y="5" width="12" height="6" rx="2" fill="#fff"/></svg>
+        ถ่ายรูปปลาของหนู
+      </label>
+      <input class="file-input" id="photo" type="file" accept="image/*" capture="environment">
+    </section>
+
+    <section class="card working" data-step="working" hidden>
+      <div class="spinner" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p>กำลังตัดรูปปลา...</p>
+    </section>
+
+    <section class="card" data-step="review" hidden>
+      <div class="pond">
+        <img id="preview" alt="ปลาของหนู">
+        <span class="bubble" style="left:30%"></span><span class="bubble"></span><span class="bubble"></span><span class="bubble"></span>
+      </div>
+      <p class="question">หัวปลาหันไปทางไหน?</p>
+      <div class="facing" role="group" aria-label="หัวปลาหันไปทางไหน">
+        <button class="btn" type="button" data-facing="left" aria-pressed="false">
+          <svg viewBox="0 0 54 40" aria-hidden="true"><path d="M50 20H10M22 6L8 20l14 14" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          หันซ้าย
+        </button>
+        <button class="btn" type="button" data-facing="right" aria-pressed="false">
+          <svg viewBox="0 0 54 40" aria-hidden="true"><path d="M4 20h40M32 6l14 14-14 14" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          หันขวา
+        </button>
+      </div>
+      <label class="name">
+        <span>ชื่อเล่นของหนู <small>(ไม่ใส่ก็ได้)</small></span>
+        <input type="text" id="name" maxlength="40" autocomplete="off" enterkeyhint="done" placeholder="เช่น น้องมะลิ">
+      </label>
+      <button class="btn coral" type="button" id="send" disabled>ปล่อยปลาลงตู้!</button>
+      <button class="btn quiet" type="button" data-action="restart">ถ่ายรูปใหม่</button>
+    </section>
+
+    <section class="card working" data-step="sending" hidden>
+      <div class="spinner" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p>กำลังปล่อยปลา...</p>
+    </section>
+
+    <section class="card done" data-step="done" hidden>
+      <svg viewBox="0 0 140 100" aria-hidden="true">
+        <path d="M30 50c20-34 70-34 90 0-20 34-70 34-90 0z" fill="#ffcf3f" stroke="#12384a" stroke-width="4"/>
+        <path d="M32 50L8 30v40z" fill="#ff7a59" stroke="#12384a" stroke-width="4" stroke-linejoin="round"/>
+        <circle cx="98" cy="44" r="7" fill="#fff" stroke="#12384a" stroke-width="3"/><circle cx="99" cy="44" r="3" fill="#12384a"/>
+        <path d="M104 60q6 5 12 0" fill="none" stroke="#12384a" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="128" cy="22" r="5" fill="none" stroke="#1b8db3" stroke-width="3"/><circle cx="134" cy="8" r="3" fill="none" stroke="#1b8db3" stroke-width="2"/>
+      </svg>
+      <h2>ปลาของหนูว่ายเข้าตู้แล้ว ดูที่จอใหญ่เลย!</h2>
+      <button class="btn" type="button" data-action="restart">ส่งปลาอีกตัว</button>
+    </section>
+
+    <p class="error" id="error" role="alert" aria-live="assertive"></p>
+  </main>
+  <script type="module" src="/draw.js"></script>
+</body>
+</html>

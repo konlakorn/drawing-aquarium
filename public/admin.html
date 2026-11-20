@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>ดูแลตู้ปลา</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Mali', system-ui, sans-serif; background: #eef9fb; color: #12384a; }
+    main { max-width: 760px; margin: 0 auto; padding: 20px 16px 40px; }
+    h1 { margin: 0 0 4px; font-size: 28px; }
+    .sub { margin: 0 0 18px; opacity: .75; }
+    .warn { background: #fff0eb; border: 2px dashed #ff7a59; padding: 12px 14px; border-radius: 14px; font-weight: 600; }
+    .warn[hidden] { display: none; }
+    ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+    li {
+      display: grid; grid-template-columns: 96px 1fr auto; align-items: center; gap: 14px;
+      background: #fff; border-radius: 18px; padding: 10px 14px; box-shadow: 0 3px 0 #cfe9ef;
+    }
+    li img {
+      width: 96px; height: 64px; object-fit: contain; border-radius: 10px;
+      background: linear-gradient(180deg, #8ee3f0, #3db0cf);
+    }
+    .name { font-weight: 700; font-size: 18px; overflow-wrap: anywhere; }
+    .meta { font-size: 14px; opacity: .7; }
+    button {
+      font: inherit; font-weight: 700; border: 0; border-radius: 14px; padding: 10px 16px; min-height: 44px;
+      background: #ff7a59; color: #fff; box-shadow: 0 4px 0 #d9532f; cursor: pointer;
+    }
+    button:disabled { opacity: .5; cursor: wait; }
+    .empty { text-align: center; padding: 30px; opacity: .7; }
+    .status { min-height: 1.5em; font-weight: 600; color: #a83a1c; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ดูแลตู้ปลา</h1>
+    <p class="sub">ปลาที่อยู่ในตู้ตอนนี้ (อัปเดตเอง ไม่ต้องรีเฟรช)</p>
+    <p class="warn" id="nokey" hidden>ไม่มีรหัสแอดมินในลิงก์ เปิดหน้านี้ด้วยลิงก์ /admin?key=... ที่แสดงตอนเปิดเซิร์ฟเวอร์</p>
+    <p class="status" id="status" role="status"></p>
+    <ul id="list"></ul>
+  </main>
+  <script type="module">
+    const key = new URLSearchParams(location.search).get('key') ?? '';
+    const list = document.getElementById('list');
+    const status = document.getElementById('status');
+    document.getElementById('nokey').hidden = Boolean(key);
+    const time = new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    function render(fish) {
+      list.replaceChildren();
+      if (!fish.length) {
+        const li = document.createElement('li');
+        li.className = 'empty';
+        li.style.display = 'block';
+        li.textContent = 'ยังไม่มีปลาในตู้';
+        list.append(li);
+        return;
+      }
+      for (const f of [...fish].reverse()) {
+        const li = document.createElement('li');
+        const img = document.createElement('img');
+        img.src = `/fish/${f.id}.png`;
+        img.alt = '';
+        const info = document.createElement('div');
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = f.name || '(ไม่มีชื่อ)';
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = `ส่งเมื่อ ${time.format(f.createdAt)} · หัวหัน${f.facing === 'left' ? 'ซ้าย' : 'ขวา'}`;
+        info.append(name, meta);
+        const del = document.createElement('button');
+        del.textContent = 'เอาออก';
+        del.disabled = !key;
+        del.addEventListener('click', () => remove(f, del));
+        li.append(img, info, del);
+        list.append(li);
+      }
+    }
+
+    async function remove(f, button) {
+      if (!confirm(`เอาปลา "${f.name || 'ไม่มีชื่อ'}" ออกจากตู้ใช่ไหม? ลบแล้วกู้คืนไม่ได้`)) return;
+      button.disabled = true;
+      status.textContent = '';
+      const res = await fetch(`/api/fish/${f.id}`, { method: 'DELETE', headers: { 'x-admin-key': key } }).catch(() => null);
+      if (!res || !res.ok) {
+        status.textContent = res?.status === 403 ? 'รหัสแอดมินไม่ถูกต้อง' : 'ลบไม่สำเร็จ ลองใหม่อีกครั้ง';
+        button.disabled = false;
+      }
+    }
+
+    new EventSource('/api/events').onmessage = (e) => render(JSON.parse(e.data).fish);
+  </script>
+</body>
+</html>
