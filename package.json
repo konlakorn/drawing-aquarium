@@ -1,0 +1,18 @@
+{
+  "name": "drawing-aquarium",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "qrcode": "^1.5.4"
+  }
+}
