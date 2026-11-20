@@ -90,7 +90,7 @@ function drawFish(f, img, now) {
   const cx = f.x * W;
   const cy = f.y * H + Math.sin(f.bob) * H * 0.008;
   const sourceDir = f.facing === 'right' ? 1 : -1;
-  const tilt = Math.max(-0.3, Math.min(0.3, (f.vy / (Math.abs(f.vx) + 0.01)) * 0.25)) * Math.sign(f.dir || 1);
+  const tilt = Math.max(-0.18, Math.min(0.18, (f.vy / (Math.abs(f.vx) + 0.01)) * 0.15)) * Math.sign(f.dir || 1);
 
   ctx.save();
   ctx.globalAlpha = alpha;
