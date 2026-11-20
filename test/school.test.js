@@ -92,3 +92,16 @@ test('entering fish wait off-screen until their image is ready', () => {
   stepSchool(school, 1 / 60, 16, view, { ready: () => false, rand });
   assert.equal(school.get('a').x, x0);
 });
+
+test('crowded swimming fish never get pushed above the water or into the sand', () => {
+  const school = new Map();
+  const snapshot = Array.from({ length: 10 }, (_, i) => ({ id: `crowd${i}`, name: '', facing: 'left' }));
+  reconcile(school, snapshot, { initial: true, now: 0, rand: () => 0.01 });
+  let i = 0;
+  for (const f of school.values()) f.x = 0.5 + (i++) * 0.001;
+  const view = { aspect: 16 / 9 };
+  for (let t = 0; t < 600; t++) {
+    stepSchool(school, 1 / 30, t * 33, view);
+    for (const f of school.values()) assert.ok(f.y >= 0.12 && f.y <= 0.75, `y=${f.y} at step ${t}`);
+  }
+});

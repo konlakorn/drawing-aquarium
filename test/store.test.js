@@ -67,3 +67,10 @@ test('concurrent adds all persist', async () => {
   await Promise.all(Array.from({ length: 8 }, (_, i) => store.add({ name: `c${i}`, facing: 'right', png: PNG })));
   assert.equal((await openStore(dir)).all().length, 8);
 });
+
+test('a relative data dir still yields absolute image paths', async () => {
+  const store = await openStore(path.relative(process.cwd(), dir));
+  const fish = await store.add({ name: 'rel', facing: 'left', png: PNG });
+  assert.ok(path.isAbsolute(store.imagePath(fish.id)));
+  assert.ok(existsSync(store.imagePath(fish.id)));
+});

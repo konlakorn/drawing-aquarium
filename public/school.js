@@ -98,6 +98,7 @@ export function stepSchool(school, dt, now, view, { ready = () => true, rand = M
     separate(f, school, dt, view);
     f.x += f.vx * dt;
     f.y += f.vy * dt * view.aspect;
+    if (f.phase.kind === 'swimming') keepInWater(f);
     f.bob += dt * 1.4;
     f.wiggle += dt * (3 + Math.hypot(f.vx, f.vy) * 60);
     if (Math.abs(f.vx) > 0.004) f.dir += (Math.sign(f.vx) - f.dir) * Math.min(1, dt * 2.5);
@@ -116,6 +117,15 @@ function separate(f, school, dt, view) {
     const push = ((PERSONAL_SPACE - d) / PERSONAL_SPACE) * 0.25 * dt;
     f.vx += (dx / d) * push;
     f.vy += (dy / d) * push;
+  }
+}
+
+// Separation can shove a fish past the top edge or into the sand faster than steering pulls it back.
+function keepInWater(f) {
+  const y = Math.min(SWIM_AREA.y1 + 0.04, Math.max(SWIM_AREA.y0 - 0.02, f.y));
+  if (y !== f.y) {
+    f.y = y;
+    f.vy = 0;
   }
 }
 
