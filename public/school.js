@@ -3,6 +3,7 @@
 // per second on both axes so steering is isotropic on any aspect ratio.
 
 export const LEAVE_MS = 7000;
+const PERSONAL_SPACE = 0.16;
 const SWIM_AREA = { x0: 0.08, x1: 0.92, y0: 0.15, y1: 0.7 };
 // Keep wandering targets out from under the QR card in the bottom-right corner.
 const QR_CORNER = { x: 0.74, y: 0.48 };
@@ -94,11 +95,27 @@ export function stepSchool(school, dt, now, view, { ready = () => true, rand = M
       school.delete(f.id);
       continue;
     }
+    separate(f, school, dt, view);
     f.x += f.vx * dt;
     f.y += f.vy * dt * view.aspect;
     f.bob += dt * 1.4;
     f.wiggle += dt * (3 + Math.hypot(f.vx, f.vy) * 60);
     if (Math.abs(f.vx) > 0.004) f.dir += (Math.sign(f.vx) - f.dir) * Math.min(1, dt * 2.5);
+  }
+}
+
+// Ten fish of 12-18% tank width otherwise bunch up and hide each other's names.
+function separate(f, school, dt, view) {
+  if (f.phase.kind !== 'swimming') return;
+  for (const o of school.values()) {
+    if (o === f || o.phase.kind === 'leaving') continue;
+    const dx = f.x - o.x;
+    const dy = (f.y - o.y) / view.aspect;
+    const d = Math.hypot(dx, dy);
+    if (d >= PERSONAL_SPACE || d === 0) continue;
+    const push = ((PERSONAL_SPACE - d) / PERSONAL_SPACE) * 0.25 * dt;
+    f.vx += (dx / d) * push;
+    f.vy += (dy / d) * push;
   }
 }
 

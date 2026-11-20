@@ -108,10 +108,10 @@ function drawFish(f, img, now) {
   }
   ctx.restore();
 
-  if (f.name) drawLabel(f.name, cx, cy + h / 2 + H * 0.012, alpha);
+  return f.name ? { text: f.name, x: cx, y: cy + h / 2 + H * 0.012, alpha } : null;
 }
 
-function drawLabel(text, x, y, alpha) {
+function drawLabel({ text, x, y, alpha }) {
   const size = Math.max(14, Math.min(34, W * 0.016));
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -143,6 +143,7 @@ function frame(now) {
   for (const id of images.keys()) if (!school.has(id)) images.delete(id);
 
   scene.drawBack(ctx, W, H, t, dt);
+  const labels = [];
   for (const f of school.values()) {
     const img = images.get(f.id);
     if (!isReady(f.id)) continue;
@@ -150,9 +151,11 @@ function frame(now) {
       const { w } = fishSize(f, img);
       scene.trail(f.x * W - f.dir * w * 0.45, f.y * H, w);
     }
-    drawFish(f, img, now);
+    const label = drawFish(f, img, now);
+    if (label) labels.push(label);
   }
   scene.drawFront(ctx, W, H, t, dt);
+  labels.forEach(drawLabel);
   sound.tick(now);
   requestAnimationFrame(frame);
 }

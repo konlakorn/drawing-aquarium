@@ -73,6 +73,17 @@ test('a leaving fish that reappears in the snapshot turns back to swimming', () 
   assert.equal(fishAlpha(school.get('a'), 600), 1);
 });
 
+test('swimming fish that start on top of each other drift apart', () => {
+  const rand = mulberry32(7);
+  const school = new Map();
+  reconcile(school, [fish('a'), fish('b')], { initial: true, rand });
+  const [a, b] = school.values();
+  Object.assign(b, { x: a.x + 0.01, y: a.y, target: { ...a.target } });
+  const gap = () => Math.hypot(a.x - b.x, (a.y - b.y) / view.aspect);
+  run(school, 0, 3000, () => 0.5);
+  assert.ok(gap() > 0.08, `gap ${gap()}`);
+});
+
 test('entering fish wait off-screen until their image is ready', () => {
   const rand = mulberry32(6);
   const school = new Map();
