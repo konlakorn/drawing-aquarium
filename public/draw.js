@@ -1,6 +1,4 @@
-import { WORK_LONG_SIDE, cutout, resizeToFit } from './cutout.js';
-
-const MAX_UPLOAD_BYTES = 950_000;
+import { prepareFish } from './photo.js';
 
 const MESSAGES = {
   'no-fish': 'หาปลาไม่เจอเลย ลองถ่ายใหม่ให้เห็นปลาทั้งตัวบนกระดาษขาวนะ',
@@ -31,48 +29,6 @@ function setState(patch) {
   if (state.image && els.preview.src !== state.image) els.preview.src = state.image;
 }
 
-async function decodePhoto(file) {
-  try {
-    return await createImageBitmap(file, { imageOrientation: 'from-image' });
-  } catch {
-    const url = URL.createObjectURL(file);
-    try {
-      const img = new Image();
-      img.src = url;
-      await img.decode();
-      return img;
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  }
-}
-
-function toImageData(source) {
-  const sw = source.naturalWidth ?? source.width;
-  const sh = source.naturalHeight ?? source.height;
-  const scale = Math.min(1, WORK_LONG_SIDE / Math.max(sw, sh));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(sw * scale);
-  canvas.height = Math.round(sh * scale);
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
-  return ctx.getImageData(0, 0, canvas.width, canvas.height);
-}
-
-function toPngDataUrl(img) {
-  for (;;) {
-    const canvas = document.createElement('canvas');
-    canvas.width = img.width;
-    canvas.height = img.height;
-    canvas.getContext('2d').putImageData(new ImageData(img.data, img.width, img.height), 0, 0);
-    const url = canvas.toDataURL('image/png');
-    const bytes = ((url.length - url.indexOf(',') - 1) * 3) / 4;
-    if (bytes <= MAX_UPLOAD_BYTES || img.width < 64) return url;
-    img = resizeToFit(img, Math.round(Math.max(img.width, img.height) * 0.8));
-  }
-}
-
 const nextPaint = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
 
 els.photo.addEventListener('change', async () => {
@@ -82,15 +38,9 @@ els.photo.addEventListener('change', async () => {
   setState({ step: 'working', error: null, facing: null });
   await nextPaint();
 
-  let pixels;
-  try {
-    pixels = toImageData(await decodePhoto(file));
-  } catch {
-    return setState({ step: 'pick', error: 'bad-photo' });
-  }
-  const result = cutout(pixels);
-  if (!result.ok) return setState({ step: 'pick', error: 'no-fish' });
-  setState({ step: 'review', image: toPngDataUrl(result.image) });
+  const result = await prepareFish(file);
+  if (!result.ok) return setState({ step: 'pick', error: result.error });
+  setState({ step: 'review', image: result.image });
 });
 
 for (const btn of els.facing) {

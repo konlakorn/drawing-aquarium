@@ -34,6 +34,38 @@
     button:disabled { opacity: .5; cursor: wait; }
     .empty { text-align: center; padding: 30px; opacity: .7; }
     .status { min-height: 1.5em; font-weight: 600; color: #a83a1c; }
+    .add {
+      background: #fff; border-radius: 18px; padding: 16px; margin: 0 0 22px; box-shadow: 0 3px 0 #cfe9ef;
+      display: grid; gap: 12px;
+    }
+    .add h2 { margin: 0; font-size: 20px; }
+    .add .hint { margin: 0; font-size: 14px; opacity: .7; }
+    .pick {
+      display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px;
+      border-radius: 14px; border: 2px dashed #3db0cf; color: #1d6f8a; font-weight: 700; cursor: pointer;
+    }
+    .pick input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .pick:focus-within { outline: 3px solid #3db0cf; outline-offset: 2px; }
+    .draft { display: grid; grid-template-columns: 160px 1fr; gap: 14px; align-items: start; }
+    .draft[hidden] { display: none; }
+    .draft img {
+      width: 160px; height: 110px; object-fit: contain; border-radius: 12px;
+      background: linear-gradient(180deg, #8ee3f0, #3db0cf);
+    }
+    .fields { display: grid; gap: 10px; }
+    .facing { display: flex; gap: 8px; }
+    .facing button { background: #e3f5f9; color: #12384a; box-shadow: 0 4px 0 #b9e0ea; flex: 1; }
+    .facing button[aria-pressed="true"] { background: #3db0cf; color: #fff; box-shadow: 0 4px 0 #23839f; }
+    .fields input[type=text] {
+      font: inherit; font-size: 17px; padding: 10px 12px; border-radius: 12px; border: 2px solid #cfe9ef; min-height: 44px;
+    }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ghost { background: transparent; color: #12384a; box-shadow: none; text-decoration: underline; }
+    .ok { color: #1f7a4d; }
+    @media (max-width: 520px) {
+      .draft { grid-template-columns: 1fr; }
+      .draft img { width: 100%; height: 160px; }
+    }
   </style>
 </head>
 <body>
@@ -41,10 +73,35 @@
     <h1>ดูแลตู้ปลา</h1>
     <p class="sub">ปลาที่อยู่ในตู้ตอนนี้ (อัปเดตเอง ไม่ต้องรีเฟรช)</p>
     <p class="warn" id="nokey" hidden>ไม่มีรหัสแอดมินในลิงก์ เปิดหน้านี้ด้วยลิงก์ /admin?key=... ที่แสดงตอนเปิดเซิร์ฟเวอร์</p>
+    <section class="add" aria-labelledby="add-title">
+      <h2 id="add-title">เพิ่มปลาเอง</h2>
+      <p class="hint">เลือกรูปถ่ายปลาบนกระดาษ ระบบจะตัดพื้นขาวออกให้ ถ้าเป็นรูป PNG ที่ตัดพื้นไว้แล้วก็ใช้ได้เลย ส่งได้ทีละหลายตัวไม่ต้องรอ</p>
+      <label class="pick">เลือกรูปปลา
+        <input type="file" id="add-file" accept="image/*">
+      </label>
+      <div class="draft" id="add-draft" hidden>
+        <img id="add-preview" alt="ตัวอย่างปลาที่จะเพิ่ม">
+        <div class="fields">
+          <div class="facing" role="group" aria-label="หัวปลาหันไปทางไหน">
+            <button type="button" data-add-facing="left" aria-pressed="false">← หัวหันซ้าย</button>
+            <button type="button" data-add-facing="right" aria-pressed="false">หัวหันขวา →</button>
+          </div>
+          <input type="text" id="add-name" maxlength="40" placeholder="ชื่อเล่น (ไม่ใส่ก็ได้)" autocomplete="off">
+          <div class="actions">
+            <button type="button" id="add-send" disabled>ปล่อยปลาลงตู้</button>
+            <button type="button" class="ghost" id="add-cancel">ยกเลิก</button>
+          </div>
+        </div>
+      </div>
+      <p class="status" id="add-status" role="status"></p>
+    </section>
+
     <p class="status" id="status" role="status"></p>
     <ul id="list"></ul>
   </main>
   <script type="module">
+    import { prepareFish } from '/photo.js';
+
     const key = new URLSearchParams(location.search).get('key') ?? '';
     const list = document.getElementById('list');
     const status = document.getElementById('status');
@@ -93,6 +150,62 @@
         button.disabled = false;
       }
     }
+
+    const add = {
+      file: document.getElementById('add-file'),
+      draft: document.getElementById('add-draft'),
+      preview: document.getElementById('add-preview'),
+      name: document.getElementById('add-name'),
+      send: document.getElementById('add-send'),
+      cancel: document.getElementById('add-cancel'),
+      status: document.getElementById('add-status'),
+      facing: [...document.querySelectorAll('[data-add-facing]')],
+    };
+    const ADD_MESSAGES = {
+      'no-fish': 'หาปลาในรูปไม่เจอ ลองรูปที่เห็นปลาทั้งตัวบนกระดาษขาว',
+      'bad-photo': 'เปิดรูปนี้ไม่ได้ ลองไฟล์อื่น',
+      too_large: 'รูปใหญ่เกินไป',
+      failed: 'เพิ่มปลาไม่สำเร็จ ลองใหม่อีกครั้ง',
+    };
+    let draft = { image: null, facing: null };
+
+    function showDraft(next, message = '', ok = false) {
+      draft = next;
+      add.draft.hidden = !draft.image;
+      if (draft.image) add.preview.src = draft.image;
+      for (const b of add.facing) b.setAttribute('aria-pressed', String(b.dataset.addFacing === draft.facing));
+      add.send.disabled = !key || !draft.image || !draft.facing;
+      add.status.textContent = message;
+      add.status.classList.toggle('ok', ok);
+    }
+
+    add.file.disabled = !key;
+    add.file.addEventListener('change', async () => {
+      const file = add.file.files?.[0];
+      add.file.value = '';
+      if (!file) return;
+      showDraft({ image: null, facing: null }, 'กำลังตัดพื้นหลัง...', true);
+      const result = await prepareFish(file);
+      if (!result.ok) return showDraft({ image: null, facing: null }, ADD_MESSAGES[result.error]);
+      showDraft({ image: result.image, facing: null });
+      add.name.value = '';
+    });
+    for (const b of add.facing) b.addEventListener('click', () => showDraft({ ...draft, facing: b.dataset.addFacing }));
+    add.cancel.addEventListener('click', () => showDraft({ image: null, facing: null }));
+    add.send.addEventListener('click', async () => {
+      add.send.disabled = true;
+      const res = await fetch('/api/fish', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-admin-key': key },
+        body: JSON.stringify({ name: add.name.value, facing: draft.facing, image: draft.image }),
+      }).catch(() => null);
+      if (!res || !res.ok) {
+        const { error } = (await res?.json().catch(() => ({}))) ?? {};
+        return showDraft(draft, ADD_MESSAGES[error] ?? ADD_MESSAGES.failed);
+      }
+      const fish = await res.json();
+      showDraft({ image: null, facing: null }, `เพิ่ม "${fish.name || 'ปลาไม่มีชื่อ'}" ลงตู้แล้ว`, true);
+    });
 
     new EventSource('/api/events').onmessage = (e) => render(JSON.parse(e.data).fish);
   </script>

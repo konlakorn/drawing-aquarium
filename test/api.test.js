@@ -102,6 +102,24 @@ test('second upload from the same IP within the cooldown is refused, failures do
   }
 });
 
+test('uploads with the admin key skip the cooldown, a wrong key does not', async () => {
+  const limited = await boot(5000);
+  const postAs = (key) => fetch(`${limited.url}/api/fish`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...(key ? { 'x-admin-key': key } : {}) },
+    body: JSON.stringify({ facing: 'left', image: PNG_URL }),
+  });
+  try {
+    for (let i = 0; i < 3; i++) assert.equal((await postAs(ADMIN_KEY)).status, 201);
+    assert.equal((await postAs('wrong')).status, 201);
+    assert.equal((await postAs('wrong')).status, 429);
+    assert.equal((await postAs(ADMIN_KEY)).status, 201);
+  } finally {
+    limited.closeStreams();
+    await new Promise((r) => limited.srv.close(r));
+  }
+});
+
 async function firstSnapshot() {
   const ctrl = new AbortController();
   const res = await fetch(`${base}/api/events`, { signal: ctrl.signal });

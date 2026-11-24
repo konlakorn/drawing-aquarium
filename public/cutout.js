@@ -245,6 +245,27 @@ function feather(mask, w, h) {
   return alpha;
 }
 
+// A PNG someone already cut out arrives with a clear background; cutting it again would find no paper.
+export function hasClearBackground({ data }) {
+  let clear = 0;
+  for (let i = 3; i < data.length; i += 4) if (data[i] < 128) clear++;
+  return clear > (data.length / 4) * 0.05;
+}
+
+export function trimClear(img) {
+  const { data, width: w, height: h } = img;
+  const alpha = new Uint8Array(w * h);
+  for (let p = 0; p < alpha.length; p++) alpha[p] = data[p * 4 + 3] >= 16 ? 1 : 0;
+  const box = boundingBox(alpha, w, h, PAD);
+  if (box.width <= 0 || box.height <= 0) return { ok: false, reason: 'no-fish' };
+  const out = new Uint8ClampedArray(box.width * box.height * 4);
+  for (let y = 0; y < box.height; y++) {
+    const from = ((box.y + y) * w + box.x) * 4;
+    out.set(data.subarray(from, from + box.width * 4), y * box.width * 4);
+  }
+  return { ok: true, image: resizeToFit({ data: out, width: box.width, height: box.height }, OUTPUT_LONG_SIDE) };
+}
+
 function boundingBox(alpha, w, h, pad) {
   let x0 = w, y0 = h, x1 = -1, y1 = -1;
   for (let y = 0; y < h; y++) {

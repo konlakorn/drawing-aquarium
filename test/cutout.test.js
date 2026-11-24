@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { OUTPUT_LONG_SIDE, cutout } from '../public/cutout.js';
+import { OUTPUT_LONG_SIDE, cutout, hasClearBackground, trimClear } from '../public/cutout.js';
 import { DEFAULT_LIGHTING, fishInk, photograph } from '../scripts/synth.js';
 
 const W = 640, H = 480;
@@ -88,4 +88,29 @@ test('output long side is capped', () => {
   const r = cutout(photograph({ width: 1200, height: 800, ink: big.ink, lighting, seed: 5 }));
   assert.equal(r.ok, true);
   assert.equal(Math.max(r.image.width, r.image.height), OUTPUT_LONG_SIDE);
+});
+
+function clearCanvas(w, h, rect) {
+  const data = new Uint8ClampedArray(w * h * 4);
+  for (let y = rect.y; y < rect.y + rect.h; y++) {
+    for (let x = rect.x; x < rect.x + rect.w; x++) data.set([20, 160, 70, 255], (y * w + x) * 4);
+  }
+  return { data, width: w, height: h };
+}
+
+test('a photo of paper is not mistaken for a ready-cut PNG, a cut-out PNG is', () => {
+  assert.equal(hasClearBackground(photo), false);
+  assert.equal(hasClearBackground(clearCanvas(400, 300, { x: 100, y: 80, w: 150, h: 90 })), true);
+});
+
+test('a ready-cut PNG is trimmed to its opaque fish so it swims at full size', () => {
+  const trimmed = trimClear(clearCanvas(400, 300, { x: 100, y: 80, w: 150, h: 90 }));
+  assert.ok(trimmed.ok);
+  assert.ok(Math.abs(trimmed.image.width - 158) <= 2, `width ${trimmed.image.width}`);
+  assert.ok(Math.abs(trimmed.image.height - 98) <= 2, `height ${trimmed.image.height}`);
+  assert.equal(trimmed.image.data[3], 0, 'padding corner stays clear');
+});
+
+test('a fully clear PNG reports no fish', () => {
+  assert.equal(trimClear({ data: new Uint8ClampedArray(50 * 40 * 4), width: 50, height: 40 }).ok, false);
 });
